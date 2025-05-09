@@ -1,0 +1,54 @@
+<%-include('header',{ title:'МебельСклад3000' });-%>
+</head>
+
+<body>
+    <main>
+        <%-include('alert');-%>
+        <div class="container mt-5">
+            <!-- Список таблиц сверху -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="d-flex flex-wrap justify-content-start">
+                        <a href="/logout" class="btn btn-primary me-2 mb-2"><i class="bi bi-door-closed-fill"></i>&nbsp;Выйти</a>
+                        <a href="/table1" class="btn btn-primary me-2 mb-2"><i class="bi bi-people-fill"></i>&nbsp;Склады</a>
+                        <a href="/table2" class="btn btn-primary me-2 mb-2"><i class="bi bi-book-fill"></i>&nbsp;Каталог</a>
+                        <a href="/table3" class="btn btn-primary me-2 mb-2"><i class="bi bi-backpack2-fill"></i>&nbsp;Наличие</a>
+                        <a href="/table4" class="btn btn-primary me-2 mb-2"><i class="bi bi-people-fill"></i>&nbsp;Сотрудники</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Центральный контент -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h3>Здравствуйте, <%= user.NAME %> <%= user.PATRONYMIC %>!</h3>
+                            <p>Здесь вы можете управлять своим контентом.</p>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Колонка 1</th>
+                                            <th>Колонка 2</th>
+                                            <th>Колонка 3</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Данные 1</td>
+                                            <td>Данные 2</td>
+                                            <td>Данные 3</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+
+<%-include('footer');-%>
