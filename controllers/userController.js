@@ -25,7 +25,7 @@ exports.homePage = async (req, res, next) => {
         }
 
         res.render('main', {
-            user: rows[0],
+            user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name, POSITION: rows[0].POSITION },
             main: 0,
             title: 'Главная'
         });
@@ -75,6 +75,7 @@ exports.login = async (req, res, next) => {
         // Сохраняем данные пользователя в сессии
         req.session.userID = user.ID;
         req.session.role = user.ROLE;
+        req.session.name = user.NAME;
 
         res.redirect('/');
     } catch (err) {
@@ -110,7 +111,7 @@ exports.table1Page = async (req, res, next) => {
 
         // Рендерим страницу с данными
         res.render('main', {
-            user: { ID: req.session.userID, ROLE: req.session.role },
+            user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name},
             main: 1,
             title: 'Склады',
             data: rows // Передаем данные в шаблон
@@ -119,6 +120,52 @@ exports.table1Page = async (req, res, next) => {
         next(err);
     }
 }
+
+exports.table1Update = async (req, res, next) => {
+    try {
+        const db = getDbConnection(req.session.role);
+
+        // Обрабатываем удаление складов
+        for (const key in req.body) {
+            if (key.startsWith('delete_')) {
+                const warehouseId = key.split('_')[1];
+                await db.execute("DELETE FROM `warehouses` WHERE `ID` = ?", [warehouseId]);
+            }
+        }
+
+        // Обрабатываем обновление названий складов
+        for (const key in req.body) {
+            if (key.startsWith('name_')) {
+                const warehouseId = key.split('_')[1];
+                const newName = req.body[key];
+                await db.execute("UPDATE `warehouses` SET `NAME` = ? WHERE `ID` = ?", [newName, warehouseId]);
+            }
+        }
+
+        // Перенаправляем обратно на страницу /table1
+        res.redirect('/table1');
+    } catch (err) {
+        next(err);
+    }
+};
+
+exports.table1Add = async (req, res, next) => {
+    try {
+        const db = getDbConnection(req.session.role);
+
+        // Получаем данные из формы
+        const { name, location } = req.body;
+
+        // Добавляем новый склад в таблицу warehouses
+        await db.execute("INSERT INTO `warehouses` (`NAME`, `LOCATION`) VALUES (?, ?)", [name, location]);
+
+        // Перенаправляем обратно на страницу /table1
+        res.redirect('/table1');
+    } catch (err) {
+        next(err);
+    }
+};
+
 // Table2 Page
 exports.table2Page = async (req, res, next) => {
     try {
@@ -130,7 +177,7 @@ exports.table2Page = async (req, res, next) => {
 
         // Рендерим страницу с данными
         res.render('main', {
-            user: { ID: req.session.userID, ROLE: req.session.role },
+            user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name},
             main: 2, // Указываем, что это страница каталога
             title: 'Каталог',
             data: rows // Передаем данные в шаблон
@@ -142,32 +189,134 @@ exports.table2Page = async (req, res, next) => {
 // Table3 Page
 exports.table3Page = async (req, res, next) => {
     try {
-        // Выбираем подключение на основе роли пользователя
         const db = getDbConnection(req.session.role);
 
-        // Выполняем запрос с объединением таблиц
-        const [rows] = await db.execute(`
+        // Получаем параметры фильтрации
+        const searchQuery = req.query.search || '';
+        const warehouseId = req.query.warehouse || '';
+
+        // Базовый SQL-запрос
+        let sql = `
             SELECT 
                 stock.ID AS STOCK_ID,
                 catalog.NAME AS CATALOG_NAME,
                 stock.AMOUNT AS AMOUNT,
+                stock.WAREHOUSE_ID AS WAREHOUSE_ID,
                 warehouses.NAME AS WAREHOUSE_NAME
             FROM stock
             JOIN catalog ON stock.CATALOG_ID = catalog.ID
             JOIN warehouses ON stock.WAREHOUSE_ID = warehouses.ID
-        `);
+            WHERE 1=1
+        `;
+        const params = [];
+
+        // Добавляем фильтр по названию товара
+        if (searchQuery) {
+            sql += ' AND catalog.NAME LIKE ?';
+            params.push(`%${searchQuery}%`);
+        }
+
+        // Добавляем фильтр по складу
+        if (warehouseId) {
+            sql += ' AND stock.WAREHOUSE_ID = ?';
+            params.push(warehouseId);
+        }
+
+        // Выполняем запрос
+        const [rows] = await db.execute(sql, params);
+
+        // Получаем список складов для выпадающего списка
+        const [warehouses] = await db.execute("SELECT `ID`, `NAME` FROM `warehouses`");
 
         // Рендерим страницу с данными
         res.render('main', {
-            user: { ID: req.session.userID, ROLE: req.session.role },
-            main: 3, // Указываем, что это страница наличия
-            title: 'Наличие',
-            data: rows // Передаем данные в шаблон
+            user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name},
+            data: rows,
+            main: 3,
+            title: "В наличии",
+            warehouses: warehouses,
+            searchQuery: searchQuery,
+            selectedWarehouse: warehouseId
         });
     } catch (err) {
         next(err);
     }
 };
+
+exports.table3Update = async (req, res, next) => {
+    try {
+        const db = getDbConnection(req.session.role);
+
+        // Перебираем все переданные данные
+        for (const key in req.body) {
+            if (key.startsWith('amount_')) {
+                const stockId = key.split('_')[1]; // Получаем ID записи
+                const changeAmount = parseInt(req.body[key], 10); // Получаем значение изменения
+
+                if (!isNaN(changeAmount) && changeAmount !== 0) {
+                    // Обновляем количество в таблице stock
+                    await db.execute(
+                        "UPDATE `stock` SET `AMOUNT` = `AMOUNT` + ? WHERE `ID` = ?",
+                        [changeAmount, stockId]
+                    );
+                }
+            }
+        }
+
+        // Перенаправляем обратно на страницу /table3
+        res.redirect('/table3');
+    } catch (err) {
+        next(err);
+    }
+};
+
+exports.updateStock = async (req, res, next) => {
+    try {
+        const db = getDbConnection(req.session.role);
+
+        // Получаем все товары из catalog
+        const [catalogRows] = await db.execute("SELECT `ID` FROM `catalog`");
+        const catalogIds = catalogRows.map(row => row.ID);
+
+        // Получаем все склады из warehouses
+        const [warehouseRows] = await db.execute("SELECT `ID` FROM `warehouses`");
+        const warehouseIds = warehouseRows.map(row => row.ID);
+
+        // Удаляем строки из stock, если товара или склада больше нет
+        if (catalogIds.length > 0 && warehouseIds.length > 0) {
+            await db.execute(`
+                DELETE FROM stock
+                WHERE CATALOG_ID NOT IN (${catalogIds.join(',')}) 
+                OR WAREHOUSE_ID NOT IN (${warehouseIds.join(',')})
+            `);
+        }
+
+        // Добавляем недостающие записи в stock
+        for (const catalog of catalogRows) {
+            for (const warehouse of warehouseRows) {
+                // Проверяем, существует ли запись в stock
+                const [existingRows] = await db.execute(
+                    "SELECT * FROM `stock` WHERE `CATALOG_ID` = ? AND `WAREHOUSE_ID` = ?",
+                    [catalog.ID, warehouse.ID]
+                );
+
+                // Если записи нет, добавляем ее
+                if (existingRows.length === 0) {
+                    await db.execute(
+                        "INSERT INTO `stock` (`CATALOG_ID`, `WAREHOUSE_ID`, `AMOUNT`) VALUES (?, ?, ?)",
+                        [catalog.ID, warehouse.ID, 0]
+                    );
+                }
+            }
+        }
+
+        // Перенаправляем обратно на страницу /table3
+        res.redirect('/table3');
+    } catch (err) {
+        next(err);
+    }
+};
+
 // Table4 Page
 exports.table4Page = async (req, res, next) => {
     try {
@@ -187,7 +336,7 @@ exports.table4Page = async (req, res, next) => {
 
         // Рендерим страницу с данными
         res.render('main', {
-            user: { ID: req.session.userID, ROLE: req.session.role },
+            user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name},
             main: 4, // Указываем, что это страница сотрудников
             title: 'Сотрудники',
             data: rows // Передаем данные в шаблон

@@ -9,6 +9,8 @@
                     <div class="row mb-3">
                         <div class="col-12">
                             <div class="d-flex flex-wrap justify-content-start">
+                                <a href="" class="btn btn-secondary disabled me-2 mb-2"><i
+                                    class="bi bi-person-badge-fill"></i>&nbsp;<%= user.NAME %></a>
                                 <a href="/logout" class="btn btn-danger me-2 mb-2"><i
                                         class="bi bi-door-closed-fill"></i>&nbsp;Выйти</a>
                                 <% if (user.ROLE == 'admin') { %>

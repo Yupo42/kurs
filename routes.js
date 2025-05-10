@@ -13,6 +13,10 @@ const {
     table2Page,
     table3Page,
     table4Page,
+    table3Update,
+    updateStock,
+    table1Update,
+    table1Add,
 } = userController;
 
 const ifNotLoggedin = (req, res, next) => {
@@ -57,6 +61,9 @@ router.get('/logout', (req, res, next) => {
 });
 
 // Post request for tables & admin
-// TODO
+router.post('/table3', ifNotLoggedin, table3Update);
+router.post('/table3/updateStock', ifNotLoggedin, updateStock);
+router.post('/table1/update', ifNotLoggedin, table1Update);
+router.post('/table1/add', ifNotLoggedin, table1Add);
 
 module.exports = router;

@@ -1,31 +1,62 @@
 <h3>Наличие на складах</h3>
-<div class="table-responsive">
-    <table class="table table-bordered table-striped table-hover">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Товар</th>
-                <th>Количество</th>
-                <th>Склад</th>
-            </tr>
-        </thead>
-        <tbody>
-            <% data.forEach(item=> { %>
-                <tr>
-                    <td>
-                        <%= item.STOCK_ID %>
-                    </td>
-                    <td>
-                        <%= item.CATALOG_NAME %>
-                    </td>
-                    <td>
-                        <%= item.AMOUNT %>
-                    </td>
-                    <td>
-                        <%= item.WAREHOUSE_NAME %>
-                    </td>
-                </tr>
+<!-- Форма фильтров -->
+<form action="/table3" method="GET" class="mb-3">
+    <div class="row">
+        <!-- Поле для поиска по названию товара -->
+        <div class="col-md-6">
+            <label for="searchFilter" class="form-label">Название товара</label>
+            <input type="text" name="search" id="searchFilter" class="form-control" placeholder="Введите название товара" value="<%= searchQuery %>">
+        </div>
+
+        <!-- Выпадающий список для выбора склада -->
+        <div class="col-md-4">
+            <label for="warehouseFilter" class="form-label">Склад</label>
+            <select name="warehouse" id="warehouseFilter" class="form-select">
+                <option value="">Все склады</option>
+                <% warehouses.forEach(warehouse => { %>
+                    <option value="<%= warehouse.ID %>" <%= warehouse.ID == selectedWarehouse ? 'selected' : '' %>>
+                        <%= warehouse.NAME %>
+                    </option>
                 <% }) %>
-        </tbody>
-    </table>
+            </select>
+        </div>
+
+        <!-- Кнопка для применения фильтров -->
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel-fill"></i>&nbsp;Найти</button>
+        </div>
+    </div>
+</form>
+<form action="/table3/updateStock" method="POST">
+    <button type="submit" class="btn btn-secondary mt-3"><i class="bi bi-lightning-charge-fill"></i>&nbsp;Фикс БД</button>
+</form>
+<div class="table-responsive">
+    <!-- Таблица -->
+    <form action="/table3" method="POST">
+        <button type="submit" class="btn btn-primary mt-3"><i class="bi bi-floppy-fill"></i>&nbsp;Подтвердить изменение</button><br><br>
+        <table class="table table-bordered table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Товар</th>
+                    <th>Количество</th>
+                    <th>Склад</th>
+                    <th>Изменить количество</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% data.forEach(item => { %>
+                    <tr>
+                        <td><%= item.STOCK_ID %></td>
+                        <td><%= item.CATALOG_NAME %></td>
+                        <td><%= item.AMOUNT %></td>
+                        <td><%= item.WAREHOUSE_NAME %></td>
+                        <td>
+                            <input type="number" name="amount_<%= item.STOCK_ID %>" class="form-control" placeholder="Введите значение">
+                        </td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </form>
 </div>
