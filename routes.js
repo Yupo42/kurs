@@ -1,11 +1,19 @@
-const router = require("express").Router();
+const express = require('express');
 const { body } = require("express-validator");
+const userController = require('./controllers/userController');
+
+const router = express.Router();
 
 const {
     homePage,
     login,
     loginPage,
-} = require("./controllers/userController");
+    adminPage,
+    table1Page,
+    table2Page,
+    table3Page,
+    table4Page,
+} = userController;
 
 const ifNotLoggedin = (req, res, next) => {
     if (!req.session.userID) {
@@ -20,7 +28,13 @@ const ifLoggedin = (req, res, next) => {
     next();
 }
 router.get('/', ifNotLoggedin, homePage);
+router.get('/table1', ifNotLoggedin, table1Page);
+router.get('/table2', ifNotLoggedin, table2Page);
+router.get('/table3', ifNotLoggedin, table3Page);
+router.get('/table4', ifNotLoggedin, table4Page);
 router.get("/login", ifLoggedin, loginPage);
+router.get("/admin", ifNotLoggedin, adminPage);
+
 router.post("/login",
     ifLoggedin,
     [
@@ -41,4 +55,8 @@ router.get('/logout', (req, res, next) => {
     });
     res.redirect('/login');
 });
+
+// Post request for tables & admin
+// TODO
+
 module.exports = router;
