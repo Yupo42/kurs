@@ -5,20 +5,25 @@
     <div class="row">
         <div class="col-md-5">
             <label for="newWarehouseName" class="form-label">Название склада</label>
-            <input type="text" name="name" id="newWarehouseName" class="form-control" placeholder="Введите название" required>
+            <input type="text" name="name" id="newWarehouseName" class="form-control" placeholder="Введите название"
+                required>
         </div>
         <div class="col-md-5">
             <label for="newWarehouseLocation" class="form-label">Расположение склада</label>
-            <input type="text" name="location" id="newWarehouseLocation" class="form-control" placeholder="Введите расположение" required>
+            <input type="text" name="location" id="newWarehouseLocation" class="form-control"
+                placeholder="Введите расположение" required>
         </div>
         <div class="col-md-2 d-flex align-items-end">
-            <button type="submit" class="btn btn-success w-100"><i class="bi bi-database-fill-add"></i>&nbsp;Добавить</button>
+            <button type="submit" class="btn btn-success w-100"><i
+                    class="bi bi-database-fill-add"></i>&nbsp;Добавить</button>
         </div>
     </div>
 </form>
 
 <div class="table-responsive">
     <form action="/table1/update" method="POST">
+        <button type="submit" class="btn btn-primary mt-3"><i class="bi bi-floppy-fill"></i>&nbsp;Сохранить
+            изменения</button><br><br>
         <table class="table table-bordered table-striped table-hover">
             <thead>
                 <tr>
@@ -29,20 +34,26 @@
                 </tr>
             </thead>
             <tbody>
-                <% data.forEach(warehouse => { %>
+                <% data.forEach(warehouse=> { %>
                     <tr>
-                        <td><%= warehouse.ID %></td>
                         <td>
-                            <input type="text" name="name_<%= warehouse.ID %>" class="form-control" value="<%= warehouse.NAME %>">
+                            <%= warehouse.ID %>
                         </td>
-                        <td><%= warehouse.LOCATION %></td>
                         <td>
-                            <button type="submit" name="delete_<%= warehouse.ID %>" value="<%= warehouse.ID %>" class="btn btn-danger btn-sm"><i class="bi bi-database-fill-dash"></i>&nbsp;Удалить</button>
+                            <input type="text" name="name_<%= warehouse.ID %>" class="form-control"
+                                value="<%= warehouse.NAME %>">
+                        </td>
+                        <td>
+                            <%= warehouse.LOCATION %>
+                        </td>
+                        <td>
+                            <button type="submit" name="delete_<%= warehouse.ID %>" value="<%= warehouse.ID %>"
+                                class="btn btn-danger btn-sm"><i
+                                    class="bi bi-database-fill-dash"></i>&nbsp;Удалить</button>
                         </td>
                     </tr>
-                <% }) %>
+                    <% }) %>
             </tbody>
         </table>
-        <button type="submit" class="btn btn-primary mt-3"><i class="bi bi-floppy-fill"></i>&nbsp;Сохранить изменения</button>
     </form>
 </div>

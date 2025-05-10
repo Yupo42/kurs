@@ -5,7 +5,8 @@
         <!-- Поле для поиска по названию товара -->
         <div class="col-md-6">
             <label for="searchFilter" class="form-label">Название товара</label>
-            <input type="text" name="search" id="searchFilter" class="form-control" placeholder="Введите название товара" value="<%= searchQuery %>">
+            <input type="text" name="search" id="searchFilter" class="form-control"
+                placeholder="Введите название товара" value="<%= searchQuery %>">
         </div>
 
         <!-- Выпадающий список для выбора склада -->
@@ -13,11 +14,11 @@
             <label for="warehouseFilter" class="form-label">Склад</label>
             <select name="warehouse" id="warehouseFilter" class="form-select">
                 <option value="">Все склады</option>
-                <% warehouses.forEach(warehouse => { %>
-                    <option value="<%= warehouse.ID %>" <%= warehouse.ID == selectedWarehouse ? 'selected' : '' %>>
+                <% warehouses.forEach(warehouse=> { %>
+                    <option value="<%= warehouse.ID %>" <%=warehouse.ID==selectedWarehouse ? 'selected' : '' %>>
                         <%= warehouse.NAME %>
                     </option>
-                <% }) %>
+                    <% }) %>
             </select>
         </div>
 
@@ -28,12 +29,14 @@
     </div>
 </form>
 <form action="/table3/updateStock" method="POST">
-    <button type="submit" class="btn btn-secondary mt-3"><i class="bi bi-lightning-charge-fill"></i>&nbsp;Фикс БД</button>
+    <button type="submit" class="btn btn-secondary mt-3"><i class="bi bi-lightning-charge-fill"></i>&nbsp;Фикс
+        БД</button>
 </form>
 <div class="table-responsive">
     <!-- Таблица -->
     <form action="/table3" method="POST">
-        <button type="submit" class="btn btn-primary mt-3"><i class="bi bi-floppy-fill"></i>&nbsp;Подтвердить изменение</button><br><br>
+        <button type="submit" class="btn btn-primary mt-3"><i class="bi bi-floppy-fill"></i>&nbsp;Подтвердить
+            изменение</button><br><br>
         <table class="table table-bordered table-striped table-hover">
             <thead>
                 <tr>
@@ -45,17 +48,26 @@
                 </tr>
             </thead>
             <tbody>
-                <% data.forEach(item => { %>
+                <% data.forEach(item=> { %>
                     <tr>
-                        <td><%= item.STOCK_ID %></td>
-                        <td><%= item.CATALOG_NAME %></td>
-                        <td><%= item.AMOUNT %></td>
-                        <td><%= item.WAREHOUSE_NAME %></td>
                         <td>
-                            <input type="number" name="amount_<%= item.STOCK_ID %>" class="form-control" placeholder="Введите значение">
+                            <%= item.STOCK_ID %>
+                        </td>
+                        <td>
+                            <%= item.CATALOG_NAME %>
+                        </td>
+                        <td>
+                            <%= item.AMOUNT %>
+                        </td>
+                        <td>
+                            <%= item.WAREHOUSE_NAME %>
+                        </td>
+                        <td>
+                            <input type="number" name="amount_<%= item.STOCK_ID %>" class="form-control"
+                                placeholder="Введите значение">
                         </td>
                     </tr>
-                <% }) %>
+                    <% }) %>
             </tbody>
         </table>
     </form>

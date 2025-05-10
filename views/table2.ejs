@@ -1,31 +1,111 @@
 <h3>Каталог товаров</h3>
-<div class="table-responsive">
-    <table class="table table-bordered table-striped table-hover">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Название</th>
-                <th>Цена</th>
-                <th>Описание</th>
-            </tr>
-        </thead>
-        <tbody>
-            <% data.forEach(item=> { %>
-                <tr>
-                    <td>
-                        <%= item.ID %>
-                    </td>
-                    <td>
-                        <%= item.NAME %>
-                    </td>
-                    <td>
-                        <%= item.PRICE %>
-                    </td>
-                    <td>
-                        <%= item.DESCRIPTION %>
-                    </td>
-                </tr>
-                <% }) %>
-        </tbody>
-    </table>
+
+<!-- Форма добавления нового товара -->
+<form action="/table2/add" method="POST" class="mb-4">
+    <div class="row">
+        <div class="col-md-3">
+            <label for="newProductName" class="form-label">Название товара</label>
+            <input type="text" name="name" id="newProductName" class="form-control" placeholder="Введите название"
+                required>
+        </div>
+        <div class="col-md-2">
+            <label for="newProductPrice" class="form-label">Цена</label>
+            <input type="number" name="price" id="newProductPrice" class="form-control" placeholder="Введите цену"
+                required>
+        </div>
+        <div class="col-md-5">
+            <label for="newProductDescription" class="form-label">Описание</label>
+            <input type="text" name="description" id="newProductDescription" class="form-control"
+                placeholder="Введите описание">
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-success w-100"><i
+                    class="bi bi-database-fill-add"></i>&nbsp;Добавить</button>
+        </div>
+    </div>
+</form>
+
+<!-- Чекбокс для переключения режима -->
+<div class="form-check form-switch mb-3">
+    <input class="form-check-input" type="checkbox" id="editModeToggle" onchange="toggleEditMode()">
+    <label class="form-check-label" for="editModeToggle">Режим редактирования</label>
 </div>
+
+<div class="table-responsive">
+    <form action="/table2/update" method="POST">
+        <button type="submit" class="btn btn-primary mt-3"><i class="bi bi-floppy-fill"></i>&nbsp;Сохранить
+            изменения</button><br><br>
+        <table class="table table-bordered table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Название</th>
+                    <th>Цена</th>
+                    <th>Описание</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% data.forEach(item=> { %>
+                    <tr>
+                        <td>
+                            <%= item.ID %>
+                        </td>
+                        <td class="editable">
+                            <input type="text" name="name_<%= item.ID %>" class="form-control" value="<%= item.NAME %>">
+                            <span class="read-only">
+                                <%= item.NAME %>
+                            </span>
+                        </td>
+                        <td class="editable">
+                            <input type="number" name="price_<%= item.ID %>" class="form-control"
+                                value="<%= item.PRICE %>">
+                            <span class="read-only">
+                                <%= item.PRICE %>
+                            </span>
+                        </td>
+                        <td class="editable">
+                            <input type="text" name="description_<%= item.ID %>" class="form-control"
+                                value="<%= item.DESCRIPTION %>">
+                            <span class="read-only">
+                                <%= item.DESCRIPTION %>
+                            </span>
+                        </td>
+                        <td>
+                            <button type="submit" name="delete_<%= item.ID %>" value="<%= item.ID %>"
+                                class="btn btn-danger btn-sm">
+                                <i class="bi bi-database-fill-dash"></i>&nbsp;Удалить
+                            </button>
+                        </td>
+                    </tr>
+                    <% }) %>
+            </tbody>
+        </table>
+    </form>
+</div>
+
+<script>
+    // Функция для переключения режима редактирования
+    function toggleEditMode() {
+        const isEditMode = document.getElementById('editModeToggle').checked;
+        const editableCells = document.querySelectorAll('.editable');
+
+        editableCells.forEach(cell => {
+            const input = cell.querySelector('input');
+            const span = cell.querySelector('.read-only');
+
+            if (isEditMode) {
+                input.style.display = 'block';
+                span.style.display = 'none';
+            } else {
+                input.style.display = 'none';
+                span.style.display = 'block';
+            }
+        });
+    }
+
+    // Инициализация: скрываем input по умолчанию
+    document.addEventListener('DOMContentLoaded', () => {
+        toggleEditMode();
+    });
+</script>

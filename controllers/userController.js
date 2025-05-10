@@ -85,19 +85,32 @@ exports.login = async (req, res, next) => {
 
 // Admin Page
 exports.adminPage = async (req, res, next) => {
-    // const hashPass = await bcrypt.hash("12345678", 16);
-    // console.log(hashPass);
-    const [row] = await dbConnections.guest.execute("SELECT * FROM `users` WHERE `ID`=?", [req.session.userID]);
-    if (row.length !== 1) {
-        return res.redirect('/logout');
+    try {
+        const db = getDbConnection(req.session.role);
+
+        // Выполняем запрос к таблице users
+        const [rows] = await db.execute(`
+            SELECT 
+                ID, 
+                SURNAME, 
+                NAME, 
+                PATRONYMIC, 
+                POSITION,
+                LOGIN, 
+                ROLE 
+            FROM users
+        `);
+
+        // Рендерим страницу
+        res.render('admin', {
+            user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name },
+            title: 'Админка',
+            data: rows,
+            main: 4
+        });
+    } catch (err) {
+        next(err);
     }
-    if (row[0].ROLE !== 'admin') {
-        return res.redirect('/');
-    }
-    res.render('admin', {
-        user: row[0],
-        title: 'Админка'
-    });
 }
 
 // Table1 Page
@@ -111,7 +124,7 @@ exports.table1Page = async (req, res, next) => {
 
         // Рендерим страницу с данными
         res.render('main', {
-            user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name},
+            user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name },
             main: 1,
             title: 'Склады',
             data: rows // Передаем данные в шаблон
@@ -177,7 +190,7 @@ exports.table2Page = async (req, res, next) => {
 
         // Рендерим страницу с данными
         res.render('main', {
-            user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name},
+            user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name },
             main: 2, // Указываем, что это страница каталога
             title: 'Каталог',
             data: rows // Передаем данные в шаблон
@@ -186,6 +199,61 @@ exports.table2Page = async (req, res, next) => {
         next(err);
     }
 }
+
+exports.table2Update = async (req, res, next) => {
+    try {
+        const db = getDbConnection(req.session.role);
+
+        // Обрабатываем удаление товаров
+        for (const key in req.body) {
+            if (key.startsWith('delete_')) {
+                const productId = key.split('_')[1];
+                await db.execute("DELETE FROM `catalog` WHERE `ID` = ?", [productId]);
+            }
+        }
+
+        // Обрабатываем обновление товаров
+        for (const key in req.body) {
+            if (key.startsWith('name_')) {
+                const productId = key.split('_')[1];
+                const newName = req.body[key];
+                const newPrice = req.body[`price_${productId}`];
+                const newDescription = req.body[`description_${productId}`];
+
+                await db.execute(
+                    "UPDATE `catalog` SET `NAME` = ?, `PRICE` = ?, `DESCRIPTION` = ? WHERE `ID` = ?",
+                    [newName, newPrice, newDescription, productId]
+                );
+            }
+        }
+
+        // Перенаправляем обратно на страницу /table2
+        res.redirect('/table2');
+    } catch (err) {
+        next(err);
+    }
+};
+
+exports.table2Add = async (req, res, next) => {
+    try {
+        const db = getDbConnection(req.session.role);
+
+        // Получаем данные из формы
+        const { name, price, description } = req.body;
+
+        // Добавляем новый товар в таблицу catalog
+        await db.execute(
+            "INSERT INTO `catalog` (`NAME`, `PRICE`, `DESCRIPTION`) VALUES (?, ?, ?)",
+            [name, price, description]
+        );
+
+        // Перенаправляем обратно на страницу /table2
+        res.redirect('/table2');
+    } catch (err) {
+        next(err);
+    }
+};
+
 // Table3 Page
 exports.table3Page = async (req, res, next) => {
     try {
@@ -230,7 +298,7 @@ exports.table3Page = async (req, res, next) => {
 
         // Рендерим страницу с данными
         res.render('main', {
-            user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name},
+            user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name },
             data: rows,
             main: 3,
             title: "В наличии",
@@ -336,11 +404,88 @@ exports.table4Page = async (req, res, next) => {
 
         // Рендерим страницу с данными
         res.render('main', {
-            user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name},
+            user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name },
             main: 4, // Указываем, что это страница сотрудников
             title: 'Сотрудники',
             data: rows // Передаем данные в шаблон
         });
+    } catch (err) {
+        next(err);
+    }
+};
+
+exports.changePassword = async (req, res, next) => {
+    try {
+        const db = getDbConnection(req.session.role);
+        const { userId, newPassword } = req.body;
+
+        // Хэшируем новый пароль
+        const hashedPassword = await bcrypt.hash(newPassword, 16);
+
+        // Обновляем пароль в базе данных
+        await db.execute("UPDATE `users` SET `PASSWORD` = ? WHERE `ID` = ?", [hashedPassword, userId]);
+
+        // Перенаправляем обратно на страницу /table4
+        res.redirect('/admin');
+    } catch (err) {
+        next(err);
+    }
+};
+
+exports.table4Update = async (req, res, next) => {
+    try {
+        const db = getDbConnection(req.session.role);
+
+        // Обрабатываем удаление сотрудников
+        for (const key in req.body) {
+            if (key.startsWith('delete_')) {
+                const userId = key.split('_')[1];
+                await db.execute("DELETE FROM `users` WHERE `ID` = ?", [userId]);
+            }
+        }
+
+        // Обрабатываем обновление данных сотрудников
+        for (const key in req.body) {
+            if (key.startsWith('surname_')) {
+                const userId = key.split('_')[1];
+                const newSurname = req.body[key];
+                const newName = req.body[`name_${userId}`];
+                const newPatronymic = req.body[`patronymic_${userId}`];
+                const newPosition = req.body[`position_${userId}`];
+                const newRole = req.body[`role_${userId}`];
+
+                await db.execute(
+                    "UPDATE `users` SET `SURNAME` = ?, `NAME` = ?, `PATRONYMIC` = ?, `POSITION` = ?, `ROLE` = ? WHERE `ID` = ?",
+                    [newSurname, newName, newPatronymic, newPosition, newRole, userId]
+                );
+            }
+        }
+
+        // Перенаправляем обратно на страницу /admin
+        res.redirect('/admin');
+    } catch (err) {
+        next(err);
+    }
+};
+
+exports.addUser = async (req, res, next) => {
+    try {
+        const db = getDbConnection(req.session.role);
+
+        // Получаем данные из формы
+        const { surname, name, patronymic, position, login, password, role } = req.body;
+
+        // Хэшируем пароль
+        const hashedPassword = await bcrypt.hash(password, 16);
+
+        // Добавляем нового пользователя в таблицу users
+        await db.execute(
+            "INSERT INTO `users` (`SURNAME`, `NAME`, `PATRONYMIC`, `POSITION`, `LOGIN`, `PASSWORD`, `ROLE`) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [surname, name, patronymic, position, login, hashedPassword, role]
+        );
+
+        // Перенаправляем обратно на страницу /admin
+        res.redirect('/admin');
     } catch (err) {
         next(err);
     }
