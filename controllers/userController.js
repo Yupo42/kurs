@@ -84,7 +84,7 @@ exports.login = async (req, res, next) => {
 
 // Admin Page
 exports.adminPage = async (req, res, next) => {
-    // const hashPass = await bcrypt.hash("pocoloco", 16);
+    // const hashPass = await bcrypt.hash("12345678", 16);
     // console.log(hashPass);
     const [row] = await dbConnections.guest.execute("SELECT * FROM `users` WHERE `ID`=?", [req.session.userID]);
     if (row.length !== 1) {
@@ -121,37 +121,78 @@ exports.table1Page = async (req, res, next) => {
 }
 // Table2 Page
 exports.table2Page = async (req, res, next) => {
-    const [row] = await dbConnections.guest.execute("SELECT * FROM `users` WHERE `ID`=?", [req.session.userID]);
-    if (row.length !== 1) {
-        return res.redirect('/logout');
+    try {
+        // Выбираем подключение на основе роли пользователя
+        const db = getDbConnection(req.session.role);
+
+        // Выполняем запрос к таблице catalog
+        const [rows] = await db.execute("SELECT `ID`, `NAME`, `PRICE`, `DESCRIPTION` FROM `catalog`");
+
+        // Рендерим страницу с данными
+        res.render('main', {
+            user: { ID: req.session.userID, ROLE: req.session.role },
+            main: 2, // Указываем, что это страница каталога
+            title: 'Каталог',
+            data: rows // Передаем данные в шаблон
+        });
+    } catch (err) {
+        next(err);
     }
-    res.render('main', {
-        user: row[0],
-        main: 2,
-        title: 'Каталог'
-    });
 }
 // Table3 Page
 exports.table3Page = async (req, res, next) => {
-    const [row] = await dbConnections.guest.execute("SELECT * FROM `users` WHERE `ID`=?", [req.session.userID]);
-    if (row.length !== 1) {
-        return res.redirect('/logout');
+    try {
+        // Выбираем подключение на основе роли пользователя
+        const db = getDbConnection(req.session.role);
+
+        // Выполняем запрос с объединением таблиц
+        const [rows] = await db.execute(`
+            SELECT 
+                stock.ID AS STOCK_ID,
+                catalog.NAME AS CATALOG_NAME,
+                stock.AMOUNT AS AMOUNT,
+                warehouses.NAME AS WAREHOUSE_NAME
+            FROM stock
+            JOIN catalog ON stock.CATALOG_ID = catalog.ID
+            JOIN warehouses ON stock.WAREHOUSE_ID = warehouses.ID
+        `);
+
+        // Рендерим страницу с данными
+        res.render('main', {
+            user: { ID: req.session.userID, ROLE: req.session.role },
+            main: 3, // Указываем, что это страница наличия
+            title: 'Наличие',
+            data: rows // Передаем данные в шаблон
+        });
+    } catch (err) {
+        next(err);
     }
-    res.render('main', {
-        user: row[0],
-        main: 3,
-        title: 'Наличие'
-    });
-}
+};
 // Table4 Page
 exports.table4Page = async (req, res, next) => {
-    const [row] = await dbConnections.guest.execute("SELECT * FROM `users` WHERE `ID`=?", [req.session.userID]);
-    if (row.length !== 1) {
-        return res.redirect('/logout');
+    try {
+        // Выбираем подключение на основе роли пользователя
+        const db = getDbConnection(req.session.role);
+
+        // Выполняем запрос к таблице user, исключая LOGIN и PASSWORD
+        const [rows] = await db.execute(`
+            SELECT 
+                ID, 
+                SURNAME, 
+                NAME, 
+                PATRONYMIC, 
+                POSITION 
+            FROM users
+        `);
+
+        // Рендерим страницу с данными
+        res.render('main', {
+            user: { ID: req.session.userID, ROLE: req.session.role },
+            main: 4, // Указываем, что это страница сотрудников
+            title: 'Сотрудники',
+            data: rows // Передаем данные в шаблон
+        });
+    } catch (err) {
+        next(err);
     }
-    res.render('main', {
-        user: row[0],
-        main: 4,
-        title: 'Сотрудники'
-    });
-}
+};

@@ -1,0 +1,31 @@
+<h3>Наличие на складах</h3>
+<div class="table-responsive">
+    <table class="table table-bordered table-striped table-hover">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Товар</th>
+                <th>Количество</th>
+                <th>Склад</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% data.forEach(item=> { %>
+                <tr>
+                    <td>
+                        <%= item.STOCK_ID %>
+                    </td>
+                    <td>
+                        <%= item.CATALOG_NAME %>
+                    </td>
+                    <td>
+                        <%= item.AMOUNT %>
+                    </td>
+                    <td>
+                        <%= item.WAREHOUSE_NAME %>
+                    </td>
+                </tr>
+                <% }) %>
+        </tbody>
+    </table>
+</div>

@@ -30,28 +30,8 @@
                     <!-- Центральный контент -->
                     <div class="row">
                         <div class="main bg-white rounded-3 shadow-lg p-4">
-                            <% if (main === 1) { %>
-                                <h3>Список складов</h3>
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-striped table-hover">
-                                        <thead>
-                                            <tr>
-                                                <th>ID</th>
-                                                <th>Название</th>
-                                                <th>Расположение</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <% data.forEach(warehouse => { %>
-                                                <tr>
-                                                    <td><%= warehouse.ID %></td>
-                                                    <td><%= warehouse.NAME %></td>
-                                                    <td><%= warehouse.LOCATION %></td>
-                                                </tr>
-                                            <% }) %>
-                                        </tbody>
-                                    </table>
-                                </div>
+                            <% if (main !== 0) { %>
+                                <%- include('table'+main); -%>
                             <% } else { %>
                                 <%- include('hello'); -%>
                             <% } %>
