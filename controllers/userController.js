@@ -25,7 +25,7 @@ exports.homePage = async (req, res, next) => {
         }
 
         res.render('main', {
-            user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name, POSITION: rows[0].POSITION },
+            user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name, PATRONYMIC: rows[0].PATRONYMIC, POSITION: rows[0].POSITION },
             main: 0,
             title: 'Главная'
         });
