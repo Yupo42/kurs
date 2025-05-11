@@ -155,9 +155,21 @@ exports.table1Update = async (req, res, next) => {
             }
         }
 
-        // Перенаправляем обратно на страницу /table1
         res.redirect('/table1');
     } catch (err) {
+        if (err.code === 'ER_TABLEACCESS_DENIED_ERROR') {
+            // Если ошибка связана с недостаточными правами, получаем данные из warehouses
+            const db = getDbConnection(req.session.role);
+            const [rows] = await db.execute("SELECT `ID`, `NAME`, `LOCATION` FROM `warehouses`");
+            // Передаём сообщение об ошибке в шаблон
+            return res.render('main', {
+                user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name },
+                main: 1,
+                title: 'Склады',
+                data: rows,
+                error: 'Недостаточно прав для выполнения операции.'
+            });
+        }
         next(err);
     }
 };
@@ -175,6 +187,19 @@ exports.table1Add = async (req, res, next) => {
         // Перенаправляем обратно на страницу /table1
         res.redirect('/table1');
     } catch (err) {
+        if (err.code === 'ER_TABLEACCESS_DENIED_ERROR') {
+            // Если ошибка связана с недостаточными правами, получаем данные из warehouses
+            const db = getDbConnection(req.session.role);
+            const [rows] = await db.execute("SELECT `ID`, `NAME`, `LOCATION` FROM `warehouses`");
+            // Передаём сообщение об ошибке в шаблон
+            return res.render('main', {
+                user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name },
+                main: 1,
+                title: 'Склады',
+                data: rows,
+                error: 'Недостаточно прав для добавления нового склада.'
+            });
+        }
         next(err);
     }
 };
