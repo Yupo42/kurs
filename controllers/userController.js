@@ -53,7 +53,10 @@ exports.login = async (req, res, next) => {
     if (!errors.isEmpty()) {
         return res.render('login', {
             error: errors.array()[0].msg,
-            laterModeEnabled: jokeMode.isLaterEnabled()
+            laterModeEnabled: jokeMode.isLaterEnabled(),
+            smileRainEnabled: jokeMode.isSmileRainEnabled(),
+            smileRainEmojis: jokeMode.getSmileRainEmojis(),
+            smileRainInterval: jokeMode.getSmileRainInterval()
         });
     }
 
@@ -66,7 +69,10 @@ exports.login = async (req, res, next) => {
         if (rows.length !== 1) {
             return res.render('login', {
                 error: 'Неправильный логин или пароль.',
-                laterModeEnabled: jokeMode.isLaterEnabled()
+                laterModeEnabled: jokeMode.isLaterEnabled(),
+                smileRainEnabled: jokeMode.isSmileRainEnabled(),
+                smileRainEmojis: jokeMode.getSmileRainEmojis(),
+                smileRainInterval: jokeMode.getSmileRainInterval()
             });
         }
 
@@ -91,7 +97,10 @@ exports.login = async (req, res, next) => {
         if (!body._password || body._password.length < 4) {
             return res.render('login', {
                 error: 'Пароль минимум в 4 символа',
-                laterModeEnabled: jokeMode.isLaterEnabled()
+                laterModeEnabled: jokeMode.isLaterEnabled(),
+                smileRainEnabled: jokeMode.isSmileRainEnabled(),
+                smileRainEmojis: jokeMode.getSmileRainEmojis(),
+                smileRainInterval: jokeMode.getSmileRainInterval()
             });
         }
 
@@ -109,14 +118,20 @@ exports.login = async (req, res, next) => {
                         let namePatr = name + (patronymic ? ' ' + patronymic : '');
                         return res.render('login', {
                             error: `Вы ввели пароль от аккаунта "${namePatr}", возможно вы хотели войти под логином "${login}"?`,
-                            laterModeEnabled: jokeMode.isLaterEnabled()
+                            laterModeEnabled: jokeMode.isLaterEnabled(),
+                            smileRainEnabled: jokeMode.isSmileRainEnabled(),
+                            smileRainEmojis: jokeMode.getSmileRainEmojis(),
+                            smileRainInterval: jokeMode.getSmileRainInterval()
                         });
                     }
                 }
             }
             return res.render('login', {
                 error: 'Неправильный логин или пароль.',
-                laterModeEnabled: jokeMode.isLaterEnabled()
+                laterModeEnabled: jokeMode.isLaterEnabled(),
+                smileRainEnabled: jokeMode.isSmileRainEnabled(),
+                smileRainEmojis: jokeMode.getSmileRainEmojis(),
+                smileRainInterval: jokeMode.getSmileRainInterval()
             });
         }
 
