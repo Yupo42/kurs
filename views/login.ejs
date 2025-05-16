@@ -20,11 +20,66 @@
                                 name="_password">
                             <label for="floatingPassword">Пароль</label>
                         </div>
+                        <div class="form-check mb-3 text-start">
+                            <% if (typeof laterModeEnabled !== 'undefined' && laterModeEnabled) { %>
+                                <input class="form-check-input" type="checkbox" value="on" id="laterCheckbox" name="later">
+                                <label class="form-check-label" for="laterCheckbox">
+                                    Я введу пароль позже
+                                </label>
+                            <% } %>
+                        </div>
                         <button class="w-100 btn btn-lg btn-primary" type="submit"><i
                                 class="bi bi-door-open-fill"></i>&nbsp;Войти</button>
                     </form>
                 </div>
         </main>
+        <script>
+            // Отключение поля пароля при выборе чекбокса "Я введу пароль позже"
+            document.addEventListener('DOMContentLoaded', function () {
+                const laterCheckbox = document.getElementById('laterCheckbox');
+                const passwordInput = document.getElementById('floatingPassword');
+                if (laterCheckbox) {
+                    function togglePassword() {
+                        if (laterCheckbox.checked) {
+                            passwordInput.disabled = true;
+                            passwordInput.value = '';
+                        } else {
+                            passwordInput.disabled = false;
+                        }
+                    }
+                    laterCheckbox.addEventListener('change', togglePassword);
+                    togglePassword();
+                }
+            });
+        </script>
+        <% if (typeof smileRainEnabled !== 'undefined' && smileRainEnabled) { %>
+        <script>
+            // Используем строку смайликов из админки, корректно разбиваем на emoji
+            const emojis = [..."<%= smileRainEmojis || '😀😂😎😍🥳🤩😜😇🤓' %>"]
+                .filter(e => e.trim().length > 0 && e !== '?');
+            function createFallingEmoji() {
+                if (!emojis.length) return;
+                const emoji = document.createElement('div');
+                emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                emoji.style.position = 'fixed';
+                emoji.style.left = Math.random() * 100 + 'vw';
+                emoji.style.top = '-2em';
+                emoji.style.fontSize = (Math.random() * 24 + 24) + 'px';
+                emoji.style.pointerEvents = 'none';
+                emoji.style.zIndex = 0;
+                const time = Math.random() + 2;
+                emoji.style.transition = 'top ' + time + 's linear';
+                document.body.appendChild(emoji);
+                setTimeout(() => {
+                    emoji.style.top = '110vh';
+                }, 10);
+                setTimeout(() => {
+                    emoji.remove();
+                }, time* 100 + 3000);
+            }
+            setInterval(createFallingEmoji, parseInt("<%= smileRainInterval || 100 %>", 10));
+        </script>
+        <% } %>
     </body>
 
     <%-include('footer');-%>

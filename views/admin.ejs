@@ -30,7 +30,32 @@
                     <!-- Центральный контент -->
                     <div class="row">
                         <div class="main bg-white rounded-3 shadow-lg p-4">
-                            <h3>Список сотрудников</h3>
+                            <h3>Функции администратора</h3>
+
+                            <!-- Шуточный режим входа -->
+                            <form action="/admin/jokeMode" method="POST" class="mb-3">
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="jokeModeSwitch" name="enable" value="on" <%= jokeModeEnabled ? 'checked' : '' %>>
+                                    <label class="form-check-label" for="jokeModeSwitch">Шуточный режим входа</label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="laterModeSwitch" name="later" value="on" <%= laterModeEnabled ? 'checked' : '' %>>
+                                    <label class="form-check-label" for="laterModeSwitch">Разрешить "Я введу пароль позже"</label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="smileRainSwitch" name="smileRain" value="on" <%= smileRainEnabled ? 'checked' : '' %>>
+                                    <label class="form-check-label" for="smileRainSwitch">Падающие смайлики на входе</label>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="smileRainEmojis" class="form-label">Смайлики для падения (строка):</label>
+                                    <input type="text" class="form-control" id="smileRainEmojis" name="smileRainEmojis" value="<%= smileRainEmojis || '😀😂😎😍🥳🤩😜😇🤓' %>">
+                                </div>
+                                <div class="mb-2">
+                                    <label for="smileRainInterval" class="form-label">Интервал появления (мс):</label>
+                                    <input type="number" class="form-control" id="smileRainInterval" name="smileRainInterval" min="10" max="2000" value="<%= smileRainInterval || 100 %>">
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-outline-primary ms-2">Сохранить</button>
+                            </form>
 
                             <!-- Форма добавления нового пользователя -->
                             <form action="/admin/addUser" method="POST" class="mb-4">

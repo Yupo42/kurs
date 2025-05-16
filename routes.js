@@ -1,6 +1,7 @@
 const express = require('express');
 const { body } = require("express-validator");
 const userController = require('./controllers/userController');
+const jokeMode = require('./utils/jokeMode');
 
 const router = express.Router();
 
@@ -51,10 +52,6 @@ router.post("/login",
             .notEmpty()
             .escape()
             .trim(),
-        body("_password", "Пароль минимум в 4 символа")
-            .notEmpty()
-            .trim()
-            .isLength({ min: 4 }),
     ],
     login
 );
@@ -75,5 +72,21 @@ router.post('/table2/add', ifNotLoggedin, table2Add);
 router.post('/table4/changePassword', ifNotLoggedin, changePassword);
 router.post('/table4/update', ifNotLoggedin, table4Update);
 router.post('/admin/addUser', ifNotLoggedin, addUser);
+
+router.post('/admin/jokeMode', ifNotLoggedin, (req, res) => {
+    if (req.session.role !== 'admin') return res.redirect('/');
+    if (req.body.enable === 'on') jokeMode.enableJoke();
+    else jokeMode.disableJoke();
+    if (req.body.later === 'on') jokeMode.enableLater();
+    else jokeMode.disableLater();
+    if (req.body.smileRain === 'on') jokeMode.enableSmileRain();
+    else jokeMode.disableSmileRain();
+
+    // Новые поля
+    jokeMode.setSmileRainEmojis(req.body.smileRainEmojis || '😀😂😎😍🥳🤩😜😇🤓');
+    jokeMode.setSmileRainInterval(Number(req.body.smileRainInterval) || 100);
+
+    res.redirect('/admin');
+});
 
 module.exports = router;

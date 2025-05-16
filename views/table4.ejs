@@ -1,5 +1,13 @@
 <h3>Список сотрудников</h3>
 <%-include('alert');-%>
+<div class="mb-3">
+    <form method="GET" action="/table4">
+        <div class="input-group">
+            <input type="text" name="search" class="form-control" placeholder="Поиск сотрудников" value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>">
+            <button class="btn btn-primary" type="submit">Найти</button>
+        </div>
+    </form>
+</div>
 <div class="table-responsive">
     <table class="table table-bordered table-striped table-hover">
         <thead>
@@ -12,25 +20,15 @@
             </tr>
         </thead>
         <tbody>
-            <% data.forEach(user=> { %>
+            <% data.forEach(user => { %>
                 <tr>
-                    <td>
-                        <%= user.ID %>
-                    </td>
-                    <td>
-                        <%= user.SURNAME %>
-                    </td>
-                    <td>
-                        <%= user.NAME %>
-                    </td>
-                    <td>
-                        <%= user.PATRONYMIC %>
-                    </td>
-                    <td>
-                        <%= user.POSITION %>
-                    </td>
+                    <td><%= user.ID %></td>
+                    <td><%= user.SURNAME %></td>
+                    <td><%= user.NAME %></td>
+                    <td><%= user.PATRONYMIC %></td>
+                    <td><%= user.POSITION %></td>
                 </tr>
-                <% }) %>
+            <% }) %>
         </tbody>
     </table>
 </div>

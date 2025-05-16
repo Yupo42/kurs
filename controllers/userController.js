@@ -1,6 +1,7 @@
 const { validationResult } = require("express-validator");
 const bcrypt = require('bcryptjs');
 const dbConnections = require("../utils/dbConnection");
+const jokeMode = require('../utils/jokeMode');
 
 const getDbConnection = (role) => {
     switch (role) {
@@ -36,21 +37,27 @@ exports.homePage = async (req, res, next) => {
 
 // Login Page
 exports.loginPage = (req, res, next) => {
-    res.render("login");
+    res.render("login", {
+        laterModeEnabled: jokeMode.isLaterEnabled(),
+        smileRainEnabled: jokeMode.isSmileRainEnabled(),
+        smileRainEmojis: jokeMode.getSmileRainEmojis(),
+        smileRainInterval: jokeMode.getSmileRainInterval()
+    });
 };
 // Login User
 exports.login = async (req, res, next) => {
     const errors = validationResult(req);
     const { body } = req;
 
+    // Проверяем только логин
     if (!errors.isEmpty()) {
         return res.render('login', {
-            error: errors.array()[0].msg
+            error: errors.array()[0].msg,
+            laterModeEnabled: jokeMode.isLaterEnabled()
         });
     }
 
     try {
-        // Используем гостевое подключение для проверки логина
         const [rows] = await dbConnections.guest.execute(
             'SELECT * FROM `users` WHERE `LOGIN` = ?',
             [body._login]
@@ -58,21 +65,61 @@ exports.login = async (req, res, next) => {
 
         if (rows.length !== 1) {
             return res.render('login', {
-                error: 'Неправильный логин или пароль.'
+                error: 'Неправильный логин или пароль.',
+                laterModeEnabled: jokeMode.isLaterEnabled()
             });
         }
 
         const user = rows[0];
 
-        // Проверяем пароль
-        const isPasswordValid = await bcrypt.compare(body._password, user.PASSWORD);
-        if (!isPasswordValid) {
-            return res.render('login', {
-                error: 'Неправильный логин или пароль.'
+        // Если выбран чекбокс "я введу пароль позже" и режим разрешён
+        if (body.later === 'on' && jokeMode.isLaterEnabled()) {
+            req.session.userID = user.ID;
+            req.session.role = user.ROLE;
+            req.session.name = user.NAME;
+            const patronymic = user.PATRONYMIC;
+            const position = user.POSITION;
+            return res.render('main', {
+                user: { ID: user.ID, ROLE: user.ROLE, NAME: user.NAME, PATRONYMIC: patronymic, POSITION: position },
+                main: 0,
+                title: 'Главная',
+                error: 'Ну хорошо, подождём, когда вы введёте пароль!'
             });
         }
 
-        // Сохраняем данные пользователя в сессии
+        // Если чекбокс не отмечен — проверяем длину пароля
+        if (!body._password || body._password.length < 4) {
+            return res.render('login', {
+                error: 'Пароль минимум в 4 символа',
+                laterModeEnabled: jokeMode.isLaterEnabled()
+            });
+        }
+
+        // Проверяем пароль
+        const isPasswordValid = await bcrypt.compare(body._password, user.PASSWORD);
+        if (!isPasswordValid) {
+            // Шуточный режим
+            if (jokeMode.isJokeEnabled()) {
+                const [allUsers] = await dbConnections.guest.execute('SELECT * FROM `users`');
+                for (const u of allUsers) {
+                    if (await bcrypt.compare(body._password, u.PASSWORD)) {
+                        const name = u.NAME;
+                        const patronymic = u.PATRONYMIC;
+                        const login = u.LOGIN;
+                        let namePatr = name + (patronymic ? ' ' + patronymic : '');
+                        return res.render('login', {
+                            error: `Вы ввели пароль от аккаунта "${namePatr}", возможно вы хотели войти под логином "${login}"?`,
+                            laterModeEnabled: jokeMode.isLaterEnabled()
+                        });
+                    }
+                }
+            }
+            return res.render('login', {
+                error: 'Неправильный логин или пароль.',
+                laterModeEnabled: jokeMode.isLaterEnabled()
+            });
+        }
+
         req.session.userID = user.ID;
         req.session.role = user.ROLE;
         req.session.name = user.NAME;
@@ -106,7 +153,12 @@ exports.adminPage = async (req, res, next) => {
             user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name },
             title: 'Админка',
             data: rows,
-            main: 4
+            main: 4,
+            jokeModeEnabled: jokeMode.isJokeEnabled(),
+            laterModeEnabled: jokeMode.isLaterEnabled(),
+            smileRainEnabled: jokeMode.isSmileRainEnabled(),
+            smileRainEmojis: jokeMode.getSmileRainEmojis(),
+            smileRainInterval: jokeMode.getSmileRainInterval()
         });
     } catch (err) {
         next(err);
@@ -135,6 +187,19 @@ exports.table1Page = async (req, res, next) => {
 }
 
 exports.table1Update = async (req, res, next) => {
+    // Проверка роли
+    if (req.session.role !== 'admin') {
+        // Получаем данные для отображения таблицы
+        const db = getDbConnection(req.session.role);
+        const [rows] = await db.execute("SELECT `ID`, `NAME`, `LOCATION` FROM `warehouses`");
+        return res.render('main', {
+            user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name },
+            main: 1,
+            title: 'Склады',
+            data: rows,
+            error: 'Только администратор может изменять данные складов.'
+        });
+    }
     try {
         const db = getDbConnection(req.session.role);
 
@@ -158,10 +223,8 @@ exports.table1Update = async (req, res, next) => {
         res.redirect('/table1');
     } catch (err) {
         if (err.code === 'ER_TABLEACCESS_DENIED_ERROR') {
-            // Если ошибка связана с недостаточными правами, получаем данные из warehouses
             const db = getDbConnection(req.session.role);
             const [rows] = await db.execute("SELECT `ID`, `NAME`, `LOCATION` FROM `warehouses`");
-            // Передаём сообщение об ошибке в шаблон
             return res.render('main', {
                 user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name },
                 main: 1,
@@ -175,23 +238,28 @@ exports.table1Update = async (req, res, next) => {
 };
 
 exports.table1Add = async (req, res, next) => {
+    // Проверка роли
+    if (req.session.role !== 'admin') {
+        const db = getDbConnection(req.session.role);
+        const [rows] = await db.execute("SELECT `ID`, `NAME`, `LOCATION` FROM `warehouses`");
+        return res.render('main', {
+            user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name },
+            main: 1,
+            title: 'Склады',
+            data: rows,
+            error: 'Только администратор может добавлять склады.'
+        });
+    }
     try {
         const db = getDbConnection(req.session.role);
 
-        // Получаем данные из формы
         const { name, location } = req.body;
-
-        // Добавляем новый склад в таблицу warehouses
         await db.execute("INSERT INTO `warehouses` (`NAME`, `LOCATION`) VALUES (?, ?)", [name, location]);
-
-        // Перенаправляем обратно на страницу /table1
         res.redirect('/table1');
     } catch (err) {
         if (err.code === 'ER_TABLEACCESS_DENIED_ERROR') {
-            // Если ошибка связана с недостаточными правами, получаем данные из warehouses
             const db = getDbConnection(req.session.role);
             const [rows] = await db.execute("SELECT `ID`, `NAME`, `LOCATION` FROM `warehouses`");
-            // Передаём сообщение об ошибке в шаблон
             return res.render('main', {
                 user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name },
                 main: 1,
@@ -413,11 +481,13 @@ exports.updateStock = async (req, res, next) => {
 // Table4 Page
 exports.table4Page = async (req, res, next) => {
     try {
-        // Выбираем подключение на основе роли пользователя
         const db = getDbConnection(req.session.role);
 
-        // Выполняем запрос к таблице user, исключая LOGIN и PASSWORD
-        const [rows] = await db.execute(`
+        // Получаем параметр поиска
+        const searchQuery = req.query.search || '';
+
+        // Базовый SQL-запрос
+        let sql = `
             SELECT 
                 ID, 
                 SURNAME, 
@@ -425,14 +495,26 @@ exports.table4Page = async (req, res, next) => {
                 PATRONYMIC, 
                 POSITION 
             FROM users
-        `);
+            WHERE 1=1
+        `;
+        const params = [];
+
+        // Если есть параметр поиска, добавляем условие
+        if (searchQuery) {
+            sql += ` AND (SURNAME LIKE ? OR NAME LIKE ? OR PATRONYMIC LIKE ? OR POSITION LIKE ?)`;
+            params.push(`%${searchQuery}%`, `%${searchQuery}%`, `%${searchQuery}%`, `%${searchQuery}%`);
+        }
+
+        // Выполняем запрос
+        const [rows] = await db.execute(sql, params);
 
         // Рендерим страницу с данными
         res.render('main', {
             user: { ID: req.session.userID, ROLE: req.session.role, NAME: req.session.name },
-            main: 4, // Указываем, что это страница сотрудников
+            main: 4,
             title: 'Сотрудники',
-            data: rows // Передаем данные в шаблон
+            data: rows,
+            searchQuery: searchQuery // Передаем параметр поиска в шаблон
         });
     } catch (err) {
         next(err);
